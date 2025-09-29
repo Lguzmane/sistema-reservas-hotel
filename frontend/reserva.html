@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Reserva</title>
+  <link rel="stylesheet" href="styles.css">
+  <!-- Librería liviana para generar QR en el cliente -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+</head>
+<body>
+  <div class="header"><h1>Gestión de Reserva Hotelera</h1></div>
+  <main class="container">
+    <h2>Crear reserva</h2>
+
+    <div class="reserva-layout">
+      <!-- Columna izquierda: formulario -->
+      <section>
+        <form id="form">
+          <input type="hidden" id="habitacion_id">
+          <label>Nombre</label>
+          <input id="nombre" required>
+          <label>Email</label>
+          <input id="email" type="email" required>
+          <label>Desde</label>
+          <input id="desde" type="date" required>
+          <label>Hasta</label>
+          <input id="hasta" type="date" required>
+          <div style="margin-top:12px;">
+            <button class="btn" type="submit">Reservar</button>
+            <a class="btn sec" href="catalogo.html">Volver</a>
+          </div>
+        </form>
+
+        <p id="msg"></p>
+      </section>
+
+      <!-- Columna derecha: QR -->
+      <aside class="qr-card">
+        <div class="qr-title">QR de tu reserva</div>
+        <div id="qr"></div>
+        <div id="qr-meta" class="qr-meta" style="margin-top:8px;">Se mostrará aquí al confirmar.</div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    document.getElementById('habitacion_id').value = params.get('id') || '';
+
+    // Espera a que cargue la librería QR
+    let qrInstance = null;
+    function renderQR(texto){
+      const el = document.getElementById('qr');
+      el.innerHTML = ''; // limpia
+      qrInstance = new QRCode(el, {
+        text: texto,
+        width: 240,
+        height: 240,
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
+
+    document.getElementById('form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const body = {
+        nombre: document.getElementById('nombre').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        habitacion_id: Number(document.getElementById('habitacion_id').value),
+        fecha_inicio: document.getElementById('desde').value,
+        fecha_fin: document.getElementById('hasta').value
+      };
+
+      const res = await fetch('http://localhost:3000/api/reservations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const out = await res.json();
+      const msg = document.getElementById('msg');
+
+      if(res.ok){
+        msg.textContent = `✅ Reserva creada. ID: ${out.reserva_id}`;
+        // Contenido del QR (puedes ajustar el formato)
+        const payload = `RESERVA:${out.reserva_id};NOMBRE:${body.nombre};EMAIL:${body.email};DESDE:${body.fecha_inicio};HASTA:${body.fecha_fin}`;
+        renderQR(payload);
+        document.getElementById('qr-meta').textContent = 'Muestra este QR en recepción.';
+      }else{
+        msg.textContent = `⚠️ Error: ${out.error || 'No se pudo crear'}`;
+        document.getElementById('qr').innerHTML = '';
+        document.getElementById('qr-meta').textContent = 'Se mostrará aquí al confirmar.';
+      }
+    });
+  </script>
+</body>
+</html>

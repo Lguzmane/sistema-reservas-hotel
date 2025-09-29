@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Catálogo de Habitaciones</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="header"><h1>Gestión de Reserva Hotelera</h1></div>
+  <main class="container">
+    <h2>Catálogo</h2>
+
+    <p><a class="btn sec" href="index.html">Volver</a></p>
+    <ul id="lista"></ul>
+  </main>
+
+  <script>
+    const api = 'http://localhost:3000/api/rooms';
+    const ul = document.getElementById('lista');
+
+    async function cargar(){
+      const res = await fetch(api);
+      const data = await res.json();
+      ul.innerHTML = (!Array.isArray(data) || data.length === 0)
+        ? '<li class="card"><span class="card-title">Sin resultados</span></li>'
+        : data.map(r => `
+            <li class="card">
+              <div>
+                <div class="card-title">Hab ${r.numero} — ${r.tipo}</div>
+                <div class="card-sub">Capacidad: ${r.capacidad || '-'} · $${r.precio_noche}</div>
+              </div>
+              <a class="btn sec" href="reserva.html?id=${r.id}">Reservar</a>
+            </li>`).join('');
+    }
+
+    cargar();
+  </script>
+</body>
+</html>
